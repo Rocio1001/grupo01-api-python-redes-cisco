@@ -132,7 +132,13 @@ def main():
     ip_a_equipo = nombre_por_ip(equipos)
     enc_h = ["Host", "Tipo", "IP", "MAC", "Conectado a", "Interfaz del equipo"]
     filas_h = []
+    vistos = set()
     for h in hosts:
+        # el controlador a veces repite un host: se deja una sola fila por IP + MAC
+        clave = (h.get("hostIp", ""), h.get("hostMac", ""))
+        if clave in vistos:
+            continue
+        vistos.add(clave)
         ip_equipo = h.get("connectedNetworkDeviceIpAddress", "")
         filas_h.append([h.get("hostName", ""), h.get("hostType", ""), h.get("hostIp", ""),
                         h.get("hostMac", ""), ip_a_equipo.get(ip_equipo, ip_equipo),
@@ -147,14 +153,14 @@ def main():
 
     print("\nResumen:")
     for tipo, cant in Counter(f[1] for f in filas_eq).most_common():
-        print(f"  {tipo}: {cant}")
+        print(f"  {tipo or '(sin tipo)'}: {cant}")
     no_gestionados = [f[0] or f[3] for f in filas_eq if f[6] != "Managed"]
     if no_gestionados:
         print(f"  ATENCION - equipos que no estan en Managed: {', '.join(no_gestionados)}")
     else:
         print("  Todos los equipos estan en estado Managed.")
     for equipo, cant in sorted(Counter(f[4] for f in filas_h).items()):
-        print(f"  Hosts conectados a {equipo}: {cant}")
+        print(f"  Hosts conectados a {equipo or '(sin equipo)'}: {cant}")
 
     # ---------- CSV ----------
     r1 = guardar_csv("inventario_equipos.csv", enc_eq, filas_eq)
